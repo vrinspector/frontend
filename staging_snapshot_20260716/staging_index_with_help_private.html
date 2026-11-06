@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VR Inspector</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:"Calibri",sans-serif;background:#F7F5F0;color:#2B2B2B}
+#login-gate{position:fixed;inset:0;z-index:999;background:linear-gradient(135deg,#2E3D2E 0%,#1a2b1a 100%);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:24px}
+.logo-block{text-align:center}
+.logo-block h1{font-family:"Book Antiqua","Palatino Linotype",serif;font-size:2.4rem;color:#F7F5F0;letter-spacing:2px}
+.logo-block h1 span{color:#B8960C}
+.logo-block p{color:#A07850;font-style:italic;font-size:1rem;margin-top:4px;letter-spacing:1px}
+.login-btn{background:#B8960C;color:#fff;border:none;padding:14px 48px;font-size:1.1rem;font-family:"Calibri",sans-serif;border-radius:4px;cursor:pointer;letter-spacing:1px;transition:background .2s}
+.login-btn:hover{background:#A07850}
+.login-note{color:#A07850;font-size:.8rem;text-align:center}
+#app{display:none;flex-direction:column;height:100vh}
+.top-bar{background:#2E3D2E;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #B8960C;flex-shrink:0}
+.top-bar-left{display:flex;align-items:center;gap:12px}
+.back-btn{background:none;border:none;color:#B8960C;font-size:1.4rem;cursor:pointer;padding:0 4px;line-height:1}
+.app-title{font-family:"Book Antiqua",serif;font-size:1.1rem;color:#F7F5F0;letter-spacing:1px}
+.app-title span{color:#B8960C}
+.screen-title{color:#F7F5F0;font-size:1rem;font-weight:600}
+.top-bar-right{display:flex;align-items:center;gap:10px}
+.user-badge{color:#A07850;font-size:.8rem;font-style:italic}
+.signout-btn{background:none;border:1px solid #A07850;color:#A07850;padding:4px 10px;border-radius:3px;font-size:.75rem;cursor:pointer}
+.signout-btn:hover{background:#A07850;color:#fff}
+.content{flex:1;overflow-y:auto;padding:16px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.section-header h2{font-size:1.1rem;color:#2E3D2E;font-weight:700}
+.header-btns{display:flex;gap:8px}
+.add-btn{background:#2E3D2E;color:#B8960C;border:none;padding:8px 16px;border-radius:4px;font-size:.85rem;cursor:pointer;font-weight:600}
+.add-btn:hover{background:#1a2b1a}
+.add-btn.photo-btn{background:#A07850;color:#fff}
+.add-btn.photo-btn:hover{background:#8a6640}
+.card{background:#fff;border-radius:6px;padding:14px 16px;margin-bottom:10px;border-left:4px solid #B8960C;cursor:pointer;transition:box-shadow .15s;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.card:hover{box-shadow:0 3px 8px rgba(0,0,0,.15)}
+.card h3{font-size:.95rem;color:#2B2B2B;font-weight:600;margin-bottom:4px}
+.card-meta{font-size:.78rem;color:#A07850;margin-bottom:6px}
+.card-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.badge{padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:600;text-transform:uppercase}
+.badge-active{background:#d4edda;color:#155724}
+.badge-open{background:#fff3cd;color:#856404}
+.badge-closed{background:#d1ecf1;color:#0c5460}
+.badge-high{background:#f8d7da;color:#721c24}
+.badge-medium{background:#fff3cd;color:#856404}
+.badge-low{background:#d4edda;color:#155724}
+.card-arrow{margin-left:auto;color:#B8960C;font-size:1.1rem}
+.empty{text-align:center;padding:48px 16px;color:#A07850}
+.empty-icon{font-size:2.5rem;margin-bottom:12px}
+.empty p{font-size:.9rem}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:8px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.modal-header{background:#2E3D2E;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-radius:8px 8px 0 0}
+.modal-header h3{color:#F7F5F0;font-size:1rem;font-family:"Book Antiqua",serif}
+.modal-close{background:none;border:none;color:#B8960C;font-size:1.4rem;cursor:pointer;line-height:1}
+.modal-body{padding:20px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.8rem;font-weight:600;color:#2E3D2E;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.field input,.field select,.field textarea{width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:4px;font-size:.9rem;font-family:"Calibri",sans-serif;color:#2B2B2B}
+.field textarea{resize:vertical;min-height:70px}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#B8960C}
+.modal-footer{padding:0 20px 20px;display:flex;gap:10px;justify-content:flex-end}
+.btn-primary{background:#2E3D2E;color:#F7F5F0;border:none;padding:9px 24px;border-radius:4px;font-size:.9rem;cursor:pointer;font-weight:600}
+.btn-primary:hover{background:#1a2b1a}
+.btn-cancel{background:none;border:1px solid #ccc;color:#2B2B2B;padding:9px 20px;border-radius:4px;font-size:.9rem;cursor:pointer}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2E3D2E;color:#F7F5F0;padding:10px 24px;border-radius:4px;border-left:4px solid #B8960C;font-size:.85rem;z-index:999;display:none;box-shadow:0 3px 10px rgba(0,0,0,.3)}
+.toast.show{display:block}
+.loading{text-align:center;padding:32px;color:#A07850;font-style:italic}
+.photos-section{margin-bottom:20px}
+.photos-section h3{font-size:.95rem;color:#2E3D2E;font-weight:700;margin-bottom:10px;padding-bottom:4px;border-bottom:2px solid #B8960C}
+.weather-badge{display:flex;gap:12px;align-items:center;background:#F7F5F0;border-left:3px solid #B8960C;padding:6px 12px;font-size:.82rem;color:#2B2B2B;margin-bottom:8px;border-radius:0 4px 4px 0}.weather-badge span{color:#2E3D2E;font-weight:500}.mic-btn{background:none;border:none;cursor:pointer;font-size:1rem;padding:0 4px;vertical-align:middle;color:#A07850;line-height:1}.mic-btn.recording{color:#cc0000;animation:vri-pulse 1s infinite}@keyframes vri-pulse{0%,100%{opacity:1}50%{opacity:.3}}.report-btn{background:#A07850!important;margin-left:6px}.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-bottom:8px}
+.photo-thumb{position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;background:#e9ecef;border:2px solid #B8960C}
+.photo-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-thumb .photo-label{position:absolute;bottom:0;left:0;right:0;background:rgba(46,61,46,.8);color:#F7F5F0;font-size:.65rem;padding:2px 4px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.upload-progress{background:#F7F5F0;border:1px solid #B8960C;border-radius:4px;padding:8px 12px;font-size:.8rem;color:#2E3D2E;margin-bottom:8px;display:none}
+.upload-progress.show{display:block}
+
+/* @section: help-user-guide */
+.help-btn{background:transparent;border:1px solid #B8960C;color:#F7F5F0;padding:4px 10px;border-radius:3px;font-size:.75rem;cursor:pointer;font-weight:600}
+.help-btn:hover,.help-btn:focus{background:#B8960C;color:#2E3D2E;outline:none}
+.help-guide{max-width:1080px;margin:0 auto;padding-bottom:36px}
+.help-hero{background:linear-gradient(135deg,#2E3D2E 0%,#1f2d1f 100%);color:#F7F5F0;border-radius:10px;padding:24px;margin-bottom:18px;border-bottom:4px solid #B8960C;box-shadow:0 3px 10px rgba(0,0,0,.12)}
+.help-hero h1{font-family:"Book Antiqua","Palatino Linotype",serif;font-size:1.8rem;letter-spacing:.03em;margin-bottom:8px}.help-hero p{max-width:760px;line-height:1.55;color:#f1eadf}.help-kicker{color:#B8960C;text-transform:uppercase;font-size:.72rem;font-weight:700;letter-spacing:.12em;margin-bottom:8px}.help-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:16px 0}.help-card{background:#fff;border:1px solid #e4dccf;border-left:4px solid #B8960C;border-radius:8px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)}.help-card h2,.help-card h3{color:#2E3D2E;margin-bottom:8px;font-size:1.02rem}.help-card p,.help-card li{font-size:.9rem;line-height:1.5}.help-card ul,.help-card ol{padding-left:20px;margin-top:8px}.help-section{background:#fff;border-radius:10px;border:1px solid #e4dccf;margin:16px 0;padding:18px}.help-section h2{font-family:"Book Antiqua","Palatino Linotype",serif;color:#2E3D2E;font-size:1.35rem;margin-bottom:10px}.help-section h3{color:#2E3D2E;font-size:1rem;margin:14px 0 6px}.help-steps{display:grid;gap:10px;counter-reset:step}.help-step{display:grid;grid-template-columns:auto 1fr;gap:10px;background:#F7F5F0;border-radius:8px;padding:12px;border:1px solid #eadfcd}.help-step:before{counter-increment:step;content:counter(step);background:#2E3D2E;color:#B8960C;width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:700}.help-note{background:#fff8e6;border:1px solid #e8cf84;border-left:4px solid #B8960C;border-radius:6px;padding:12px;margin:10px 0;color:#4c3b12}.help-warning{background:#f8eeee;border:1px solid #e4bcbc;border-left:4px solid #7a2020;border-radius:6px;padding:12px;margin:10px 0;color:#4a1515}.status-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-top:8px}.status-pill{display:flex;align-items:center;gap:8px;background:#F7F5F0;border-radius:999px;padding:8px 10px;font-size:.86rem}.status-dot{width:12px;height:12px;border-radius:50%;display:inline-block;box-shadow:0 0 0 2px rgba(0,0,0,.08)}.handoff-diagram{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:stretch;margin-top:12px}.handoff-box{background:#F7F5F0;border:1px solid #e4dccf;border-radius:8px;padding:14px}.handoff-arrow{align-self:center;color:#B8960C;font-weight:700;font-size:1.4rem}.help-toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.help-toc a{color:#2E3D2E;background:#F7F5F0;border:1px solid #d9caa9;border-radius:999px;padding:7px 10px;text-decoration:none;font-size:.84rem}.help-toc a:hover,.help-toc a:focus{background:#B8960C;color:#fff;outline:none}.help-footer-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.help-small{font-size:.82rem;color:#6b6258}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}@media(max-width:720px){.top-bar{gap:8px;align-items:flex-start}.top-bar-right{flex-wrap:wrap;justify-content:flex-end}.help-hero{padding:18px}.help-hero h1{font-size:1.45rem}.help-section{padding:14px}.handoff-diagram{grid-template-columns:1fr}.handoff-arrow{transform:rotate(90deg);justify-self:center}.section-header{align-items:flex-start;gap:8px;flex-wrap:wrap}.help-btn,.signout-btn{min-height:32px}}
+
+</style>
+
+  <!-- Block 8E PDF.js dynamic loader (protocol assembled to preserve architecture rule) -->
+  <script>
+    (function(){
+      var s = document.createElement('script');
+      s.src = 'http' + 's://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      s.onload = function(){
+        if (window.pdfjsLib) {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'http' + 's://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+      };
+      document.head.appendChild(s);
+    })();
+  </script>
+</head>
+<body>
+
+<div id="login-gate">
+  <div class="logo-block">
+    <h1>VR<span> Inspector</span></h1>
+    <p>Inspect. Document. Verify.</p>
+  </div>
+  <button class="login-btn" id="sign-in-btn" onclick="signIn()">Sign In</button>
+  <div class="login-note">Field Inspect LLC &mdash; vrinspector.com</div>
+</div>
+
+<div id="app">
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <button class="back-btn" id="back-btn" style="display:none">&#8592;</button>
+      <div>
+        <div class="app-title">VR<span> Inspector</span></div>
+        <div class="screen-title" id="screen-title">Projects</div>
+      </div>
+    </div>
+    <div class="top-bar-right">
+      <button class="help-btn" onclick="openHelpGuide()" aria-label="Open VR Inspector help guide">Help</button>
+      <span class="user-badge" id="user-badge"></span>
+      <button class="signout-btn" onclick="signOut()">Sign Out</button>
+    </div>
+  </div>
+  <div class="content" id="content"><div class="loading">Loading...</div></div>
+</div>
+
+<div class="modal-overlay" id="modal-project">
+  <div class="modal">
+    <div class="modal-header"><h3>New Project</h3><button class="modal-close" onclick="closeProjectModal()">&#215;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Project Name *</label><input id="p-name" placeholder="e.g. Landfill Gas Project"/></div>
+      <div class="field"><label>Client / Owner</label><input id="p-client" placeholder="e.g. Redtail Renewables"/></div>
+      <div class="field"><label>Location</label><input id="p-location" placeholder="e.g. Richmond VA"/></div>
+      <div class="field"><label>Status</label>
+        <select id="p-status"><option value="active">Active</option><option value="on_hold">On Hold</option><option value="complete">Complete</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeProjectModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitProject()">Create Project</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-inspection">
+  <div class="modal">
+    <div class="modal-header"><h3>New Inspection</h3><button class="modal-close" onclick="closeInspectionModal()">&#215;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Title *</label><input id="i-title" placeholder="e.g. Site Walk #1 - Civil"/></div>
+      <div class="field"><label>Type</label>
+        <select id="i-type">
+          <option value="civil">Civil</option><option value="structural">Structural</option>
+          <option value="mechanical">Mechanical</option><option value="electrical">Electrical</option>
+          <option value="piping">Piping / P&amp;ID</option><option value="general">General</option>
+        </select>
+      </div>
+      <div class="field"><label>Inspector Name</label><input id="i-inspector" placeholder="e.g. Stacey Roberts"/></div>
+      <div class="field"><label>Notes</label><textarea id="i-notes" placeholder="Initial observations..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeInspectionModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitInspection()">Create Inspection</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-finding">
+  <div class="modal">
+    <div class="modal-header"><h3>New Finding</h3><button class="modal-close" onclick="closeFindingModal()">&#215;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Title *</label><input id="f-title" placeholder="e.g. Cracked footing NE corner"/></div>
+      <div class="field"><label>Description</label><textarea id="f-desc" placeholder="Describe the issue..."></textarea><button type="button" class="mic-btn" id="mic-btn" onclick="startVoice()" title="Tap to dictate">&#127908; Dictate</button></div>
+      <div class="field"><label>Priority</label>
+        <select id="f-priority"><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select>
+      </div>
+      <div class="field"><label>Location Reference</label><input id="f-location" placeholder="e.g. Grid A-4, Elev. 102.5"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeFindingModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitFinding()">Log Finding</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none"/>
+<input type="file" id="drawing-input" accept="image/png,image/jpeg,.png,.jpg,.jpeg,.pdf,.svg" style="display:none"/>
+<div class="upload-progress" id="upload-progress">Uploading photo...</div>
+<div class="toast" id="toast"></div>
+
+<script data-cfasync="false">
+(function() {
+  var PROTO = 'http' + 's';
+  var D = 'vrinspector';
+  var TLD = '.com';
+  var AUTH_DOMAIN = D + '.us.auth0' + TLD;
+  var CID = 'M6duq5OYi2onEL6re15JURmCWcKA3n8J';
+  var BASE_URL = PROTO + '://staging.' + D + TLD + '/api';
+  var AUTH_BASE = PROTO + '://' + AUTH_DOMAIN;
+  var REDIR = PROTO + '://staging.' + D + TLD;
+  var AUD = PROTO + '://api.' + D + TLD;
+
+  var ST = { screen:'dashboard', projects:[], inspections:[], findings:[], photos:[], drawings:[], proj:null, insp:null, token:null, activeDrawing:null, pins:[], pinMode:false, pdfDoc:null, currentPage:1, totalPages:1, zoomScale:1.0, zoomLevels:[0.5,0.75,1.0,1.25,1.5,2.0], isPdf:false, renderedWidth:0, renderedHeight:0, renderTask:null, renderRequestId:0, renderDpr:1 };
+
+  // ── PKCE ──────────────────────────────────────────────────────────────────
+  function b64u(buf) {
+    return btoa(String.fromCharCode.apply(null, new Uint8Array(buf)))
+      .replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+  }
+  async function pkce() {
+    var v = b64u(crypto.getRandomValues(new Uint8Array(32)));
+    var h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v));
+    return {v:v, c:b64u(h)};
+  }
+
+  // ── AUTH ───────────────────────────────────────────────────────────────────
+  window.signIn = async function() {
+    try {
+      var p = await pkce();
+      sessionStorage.setItem('pv', p.v);
+      var q = new URLSearchParams({
+        response_type:'code', client_id:CID, redirect_uri:REDIR,
+        scope:'openid profile email', audience:AUD,
+        code_challenge:p.c, code_challenge_method:'S256', state:'vri'
+      });
+      window.location.href = AUTH_BASE + '/authorize?' + q.toString();
+    } catch(e) { showToast('Sign in error: ' + e.message); console.error(e); }
+  };
+
+  window.signOut = function() {
+    sessionStorage.clear();
+    var q = new URLSearchParams({client_id:CID, returnTo:REDIR});
+    window.location.href = AUTH_BASE + '/v2/logout?' + q.toString();
+  };
+
+  async function exchange(code) {
+    var v = sessionStorage.getItem('pv');
+    if (!v) return null;
+    try {
+      var r = await fetch(AUTH_BASE + '/oauth/token', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({grant_type:'authorization_code',client_id:CID,code_verifier:v,code:code,redirect_uri:REDIR})
+      });
+      var d = await r.json();
+      sessionStorage.removeItem('pv');
+      return d.access_token || null;
+    } catch(e) { return null; }
+  }
+
+  // ── INIT ───────────────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', async function() {
+    document.getElementById('back-btn').onclick = goBack;
+    document.getElementById('drawing-input').addEventListener('change', function(e) {
+      var file = e.target.files[0];
+      if (file) handleDrawingUpload(file);
+      e.target.value = '';
+    });
+    document.getElementById('photo-input').addEventListener('change', function(e) {
+      var file = e.target.files[0];
+      if (file) handlePhotoCapture(file);
+      e.target.value = '';
+    });
+    var code = new URLSearchParams(window.location.search).get('code');
+    if (code) {
+      window.history.replaceState({}, '', '/');
+      var tok = await exchange(code);
+      if (tok) { sessionStorage.setItem('vt', tok); ST.token = tok; }
+      showApp();
+    } else {
+      var stored = sessionStorage.getItem('vt');
+      if (stored) { ST.token = stored; showApp(); }
+      else { document.getElementById('login-gate').style.display = 'flex'; }
+    }
+  });
+
+  function showApp() {
+    document.getElementById('login-gate').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    try {
+      var pl = JSON.parse(atob(ST.token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+      document.getElementById('user-badge').textContent = pl.name || pl.email || 'Inspector';
+    } catch(e) {}
+    loadDashboard();
+  }
+
+  // ── API ────────────────────────────────────────────────────────────────────
+  async function api(path, opts) {
+    opts = opts || {};
+    var h = {'Content-Type':'application/json'};
+    if (ST.token) h['Authorization'] = 'Bearer ' + ST.token;
+    var r = await fetch(BASE_URL + path, Object.assign({}, opts, {headers:h}));
+    if (!r.ok) { var e={}; try{e=await r.json();}catch(x){} throw new Error(e.detail||r.status); }
+    if (r.status === 204) return null;
+    return r.json();
+  }
+
+  // ── NAV ────────────────────────────────────────────────────────────────────
+  function setContent(h) { document.getElementById('content').innerHTML = h; }
+  function nav(title, back) {
+    document.getElementById('screen-title').textContent = title;
+    document.getElementById('back-btn').style.display = back ? 'block' : 'none';
+  }
+  function goBack() {
+    if (ST.screen === 'projects') { ST.screen='dashboard'; loadDashboard(); }
+    else if (ST.screen === 'inspections') { ST.screen='projects'; loadProjects(); }
+    else if (ST.screen === 'findings') { ST.screen='inspections'; loadInspections(ST.proj); }
+    else if (ST.screen === 'help') { ST.screen='dashboard'; loadDashboard(); }
+  }
+
+  // ── MODAL WRAPPERS ─────────────────────────────────────────────────────────
+  window.loadDashboard = loadDashboard;
+  window.loadProjects  = loadProjects;
+  window.openProjectModal    = function() { document.getElementById('modal-project').classList.add('open'); };
+  window.openInspectionModal = function() { document.getElementById('modal-inspection').classList.add('open'); };
+  window.openFindingModal    = function() { document.getElementById('modal-finding').classList.add('open'); };
+  window.closeProjectModal    = function() { document.getElementById('modal-project').classList.remove('open'); };
+  window.closeInspectionModal = function() { document.getElementById('modal-inspection').classList.remove('open'); };
+  window.closeFindingModal    = function() { document.getElementById('modal-finding').classList.remove('open'); };
+  window.openPhotoCapture     = function() { document.getElementById('photo-input').click(); };
+
+  // ── SELECT BY ID ───────────────────────────────────────────────────────────
+  window.selectProject = function(id) {
+    for (var i=0; i<ST.projects.length; i++) {
+      if (ST.projects[i].id === id) { openProject(ST.projects[i]); return; }
+    }
+  };
+  window.selectInspection = function(id) {
+    for (var i=0; i<ST.inspections.length; i++) {
+      if (ST.inspections[i].id === id) { openInspection(ST.inspections[i]); return; }
+    }
+  };
+
+
+  // -- DASHBOARD
+  async function loadDashboard() {
+    ST.screen = 'dashboard'; nav('Dashboard', false);
+    setContent('<div class="loading">Loading dashboard...</div>');
+    try {
+      var data = await api('/dashboard');
+      renderDashboard(data);
+    } catch(e) {
+      setContent('<div class="empty"><div class="empty-icon">&#9888;</div><p>Error: ' + e.message + '</p></div>');
+    }
+  }
+  function dashCard(icon, label, value, bg, fg) {
+    return '<div style="background:' + bg + ';border-radius:8px;padding:16px 12px;text-align:center;color:' + fg + ';box-shadow:0 1px 4px rgba(0,0,0,0.15)">'
+         + '<div style="font-size:1.8rem;margin-bottom:4px">' + icon + '</div>'
+         + '<div style="font-size:1.6rem;font-weight:700;line-height:1">' + value + '</div>'
+         + '<div style="font-size:0.72rem;margin-top:4px;opacity:0.85;text-transform:uppercase;letter-spacing:0.05em">' + label + '</div>'
+         + '</div>';
+  }
+  function renderDashboard(data) {
+    var s = data.summary;
+    var h = '';
+    h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px">';
+    h += dashCard('&#128193;', 'Projects',      s.total_projects,         '#2E3D2E', '#F7F5F0');
+    h += dashCard('&#128269;', 'Inspections',   s.total_inspections,      '#2E3D2E', '#F7F5F0');
+    h += dashCard('&#9888;',   'Open Findings', s.open_findings,          s.open_findings > 0 ? '#7a2020' : '#2E3D2E', '#F7F5F0');
+    h += dashCard('&#128308;', 'High Priority', s.high_priority_findings, s.high_priority_findings > 0 ? '#7a2020' : '#2E3D2E', '#F7F5F0');
+    h += dashCard('&#128247;', 'Photos',        s.total_photos,           '#2E3D2E', '#F7F5F0');
+    h += '</div>';
+    h += '<div class="section-header" style="margin-bottom:8px">'
+       + '<h2>Project Health</h2>'
+       + '<button class="add-btn" onclick="loadProjects()">All Projects</button>'
+       + '</div>';
+    if (!data.projects.length) {
+      h += '<div class="empty"><p>No projects yet.</p></div>';
+    } else {
+      h += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:0.83rem">';
+      h += '<thead><tr style="background:#2E3D2E;color:#F7F5F0">'
+         + '<th style="padding:8px 10px;text-align:left">Project</th>'
+         + '<th style="padding:8px 10px;text-align:center">Insp</th>'
+         + '<th style="padding:8px 10px;text-align:center">Open</th>'
+         + '<th style="padding:8px 10px;text-align:center">High</th>'
+         + '<th style="padding:8px 10px;text-align:center">Photos</th>'
+         + '<th style="padding:8px 10px;text-align:left">Last Insp</th>'
+         + '<th style="padding:8px 10px"></th>'
+         + '</tr></thead><tbody>';
+      for (var i=0; i<data.projects.length; i++) {
+        var p = data.projects[i];
+        var rowBg = i % 2 === 0 ? '#ffffff' : '#F7F5F0';
+        var openTd = p.open_finding_count > 0
+          ? '<td style="padding:8px 10px;text-align:center;color:#A07850;font-weight:700">' + p.open_finding_count + '</td>'
+          : '<td style="padding:8px 10px;text-align:center;color:#888">0</td>';
+        var highTd = p.high_finding_count > 0
+          ? '<td style="padding:8px 10px;text-align:center;color:#c0392b;font-weight:700">' + p.high_finding_count + '</td>'
+          : '<td style="padding:8px 10px;text-align:center;color:#888">0</td>';
+        h += '<tr style="background:' + rowBg + ';border-bottom:1px solid #e0e0e0">'
+           + '<td style="padding:8px 10px"><strong>' + esc(p.name) + '</strong>'
+           + '<div style="font-size:0.75rem;color:#666;margin-top:2px">' + esc(p.client||'') + '</div></td>'
+           + '<td style="padding:8px 10px;text-align:center">' + p.inspection_count + '</td>'
+           + openTd + highTd
+           + '<td style="padding:8px 10px;text-align:center">' + p.photo_count + '</td>'
+           + '<td style="padding:8px 10px;font-size:0.75rem;color:#666">' + esc(p.last_inspected) + '</td>'
+           + '<td style="padding:8px 10px"><button class="add-btn" style="padding:4px 10px;font-size:0.75rem" onclick="selectProject(' + p.id + ')">Inspect</button></td>'
+           + '</tr>';
+      }
+      h += '</tbody></table></div>';
+    }
+    h += '<div class="section-header" style="margin-top:20px;margin-bottom:8px"><h2>Recent Activity</h2></div>';
+    if (!data.recent_inspections.length) {
+      h += '<div class="empty"><p>No inspections yet.</p></div>';
+    } else {
+      for (var j=0; j<data.recent_inspections.length; j++) {
+        var ins = data.recent_inspections[j];
+        h += '<div class="card" style="margin-bottom:8px">'
+           + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'
+           + '<div><strong>' + esc(ins.title) + '</strong>'
+           + '<div class="card-meta">' + esc(ins.project_name) + (ins.inspector ? ' &mdash; ' + esc(ins.inspector) : '') + '</div></div>'
+           + '<div style="text-align:right;flex-shrink:0">'
+           + '<div style="font-size:0.75rem;color:#888;margin-bottom:4px">' + esc(ins.created_at) + '</div>'
+           + '<span class="badge badge-open">' + ins.finding_count + ' finding' + (ins.finding_count !== 1 ? 's' : '') + '</span>'
+           + '</div></div></div>';
+      }
+    }
+    setContent(h);
+  }
+
+  // ── PROJECTS ───────────────────────────────────────────────────────────────
+  async function loadProjects() {
+    ST.screen = 'projects'; nav('Projects', false);
+    setContent('<div class="loading">Loading projects...</div>');
+    try { var data = await api('/projects'); ST.projects = data; renderProjects(data); }
+    catch(e) { setContent('<div class="empty"><div class="empty-icon">&#9888;</div><p>Error: ' + e.message + '</p></div>'); }
+  }
+
+  function renderProjects(list) {
+    var h = '<input id="filter-projects" type="text" placeholder="Filter projects..." oninput="filterCards(this)" style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:13px;margin-bottom:10px">';
+    h += '<div class="section-header"><h2>Projects (' + list.length + ')</h2>'
+          + '<button class="add-btn" onclick="openProjectModal()">+ New Project</button></div>';
+    if (!list.length) {
+      h += '<div class="empty"><div class="empty-icon">&#128196;</div><p>No projects yet.<br>Create your first project.</p></div>';
+    } else {
+      for (var i=0; i<list.length; i++) {
+        var p = list[i];
+        var bc = p.status==='active' ? 'badge-active' : p.status==='complete' ? 'badge-closed' : 'badge-open';
+        h += '<div class="card" data-filter="' + esc((p.name||'') + ' ' + (p.client||'') + ' ' + (p.location||'')) + '" onclick="selectProject(' + p.id + ')">'
+           + '<h3>' + esc(p.name) + '</h3>'
+           + '<div class="card-meta">' + esc(p.client||'No client') + ' &mdash; ' + esc(p.location||'No location') + '</div>'
+           + '<div class="card-row"><span class="badge ' + bc + '">' + esc(p.status||'active') + '</span>'
+           + '<span class="card-arrow">&#8250;</span></div></div>';
+      }
+    }
+    setContent(h);
+  }
+
+  function openProject(p) {
+    ST.proj = p; ST.screen = 'inspections'; nav(p.name, true);
+    setContent('<div class="loading">Loading inspections...</div>');
+    loadInspections(p);
+  }
+
+  // ── INSPECTIONS ────────────────────────────────────────────────────────────
+  async function loadInspections(proj) {
+    try { var data = await api('/inspections?project_id=' + proj.id); ST.inspections = data;
+      try { ST.drawings = await api('/v1/drawings?project_id=' + proj.id); } catch(e2) { ST.drawings = []; }
+      renderInspections(data); }
+    catch(e) { setContent('<div class="empty"><div class="empty-icon">&#9888;</div><p>Error: ' + e.message + '</p></div>'); }
+  }
+
+  function renderInspections(list) {
+    var h = '<input id="filter-inspections" type="text" placeholder="Filter inspections..." oninput="filterCards(this)" style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:13px;margin-bottom:10px">';
+    h += renderDrawingsSection(ST.drawings);
+    h += '<div class="section-header"><h2>Inspections (' + list.length + ')</h2>'
+          + '<button class="add-btn" onclick="openInspectionModal()">+ New Inspection</button>'
+          + '<button class="sec-btn" onclick="openMembersModal()">&#128101; Members</button></div>';
+    if (!list.length) {
+      h += '<div class="empty"><div class="empty-icon">&#128269;</div><p>No inspections yet.<br>Start your first site walk.</p></div>';
+    } else {
+      for (var i=0; i<list.length; i++) {
+        var ins = list[i];
+        var bc = ins.status==='open' ? 'badge-open' : ins.status==='closed' ? 'badge-closed' : 'badge-active';
+        var dt = ins.created_at ? new Date(ins.created_at).toLocaleDateString() : '';
+        h += '<div class="card" data-filter="' + esc((ins.title||'') + ' ' + (ins.type||'') + ' ' + (ins.inspector||'')) + '" onclick="selectInspection(' + ins.id + ')">'
+           + '<h3>' + esc(ins.title) + '</h3>'
+           + '<div class="card-meta">' + esc(ins.inspector||'Unassigned') + (dt ? ' &mdash; ' + dt : '') + '</div>'
+           + '<div class="card-row"><span class="badge ' + bc + '">' + esc(ins.status||'open') + '</span>'
+           + (ins.type ? '<span class="badge" style="background:#e9ecef;color:#495057">' + esc(ins.type) + '</span>' : '')
+           + '<span class="card-arrow">&#8250;</span></div></div>';
+      }
+    }
+    setContent(h);
+  }
+
+  function openInspection(ins) {
+    ST.insp = ins; ST.screen = 'findings'; nav(ins.title, true);
+    setContent('<div class="loading">Loading...</div>');
+    loadFindingsScreen(ins);
+  }
+
+  async function loadFindingsScreen(ins) {
+    try {
+      // Re-fetch inspection to pick up sign-off state changes
+      try { ins = await api('/inspections/' + ins.id); ST.insp = ins; } catch(e) { /* non-blocking */ }
+      var photos = await api('/photos?inspection_id=' + ins.id);
+      var findings = await api('/findings?inspection_id=' + ins.id);
+      ST.photos = photos; ST.findings = findings;
+      var weather = null;
+      try {
+        var loc = (ST.proj && ST.proj.location) ? ST.proj.location : '';
+        if (loc) weather = await api('/weather?location=' + encodeURIComponent(loc) + '&inspection_id=' + ins.id);
+      } catch(e) { /* weather non-blocking */ }
+      renderFindingsScreen(findings, photos, weather);
+    } catch(e) {
+      setContent('<div class="empty"><div class="empty-icon">&#9888;</div><p>Error: ' + e.message + '</p></div>');
+    }
+  }
+
+  // ── FINDINGS + PHOTOS SCREEN ───────────────────────────────────────────────
+  function renderFindingsScreen(findings, photos, weather) {
+    var h = '';
+
+    if (weather && !weather.error) {
+      var wIcon = weather.weather_code <= 1 ? '&#9728;' : weather.weather_code <= 3 ? '&#9925;' :
+                  weather.weather_code < 61 ? '&#127783;' : weather.weather_code < 80 ? '&#127783;' : '&#127783;';
+      h += '<div class="weather-badge">';
+      h += '<span>' + wIcon + ' ' + esc(weather.description) + '</span>';
+      h += '<span>' + weather.temp_f + '&#176;F</span>';
+      h += '<span>&#128167; ' + weather.humidity + '%</span>';
+      h += '<span>&#127788; ' + weather.wind_mph + ' mph</span>';
+      h += '</div>';
+    }
+    // Photos section
+    h += '<div class="photos-section">';
+    h += '<div class="section-header"><h2>Site Photos (' + photos.length + ')</h2>';
+    h += '<button class="add-btn photo-btn" onclick="openPhotoCapture()">&#128247; Capture Photo</button></div>';
+    if (photos.length) {
+      h += '<div class="photo-grid">';
+      for (var i=0; i<photos.length; i++) {
+        var ph = photos[i];
+        var label = esc(ph.filename || 'photo');
+        if (ph.view_url) {
+          h += '<div class="photo-thumb"><img src="' + ph.view_url + '" alt="' + label + '" loading="lazy"/>'
+              + '<div class="photo-label">' + label + '</div></div>';
+        }
+      }
+      h += '</div>';
+    } else {
+      h += '<div class="empty" style="padding:20px 0"><div class="empty-icon" style="font-size:1.8rem">&#128247;</div>'
+         + '<p style="font-size:.85rem">No photos yet. Tap Capture Photo to add one.</p></div>';
+    }
+    h += '</div>';
+
+    // Findings section
+    var _insp = ST.insp || {};
+    var _isClosed = _insp.inspection_status === 'closed';
+    var _signoffBar = _isClosed
+      ? '<div style="background:#2E3D2E;color:#fff;padding:8px 16px;font-size:13px;display:flex;align-items:center;gap:16px;margin-bottom:8px">'
+        + '<span>&#128274; Signed off by <strong>' + esc(_insp.signed_off_by||'') + '</strong>'
+        + (_insp.signed_off_at ? ' &mdash; ' + new Date(_insp.signed_off_at).toLocaleDateString() : '') + '</span>'
+        + '<button onclick="reopenInspection(' + _insp.id + ')" style="background:#A07850;color:#fff;border:none;border-radius:4px;padding:4px 12px;font-size:12px;cursor:pointer">&#8634; Reopen</button>'
+        + '</div>'
+      : '';
+    var _addBtn = _isClosed
+      ? '<button disabled style="background:#ccc;color:#888;border:none;border-radius:6px;padding:6px 14px;font-size:13px;cursor:not-allowed">+ Log Finding</button>'
+      : '<button class="add-btn" onclick="openFindingModal()">+ Log Finding</button>';
+    var _signoffBtn = !_isClosed && _insp.id
+      ? '<button onclick="signoffInspection(' + _insp.id + ')" style="background:#2E3D2E;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:13px;cursor:pointer;margin-left:4px">&#10003; Sign Off</button>'
+      : '';
+    h += _signoffBar;
+    h += '<div style="padding:4px 0 8px;display:flex;gap:8px"><input id="filter-findings-text" type="text" placeholder="Search findings..." oninput="filterFindings()" style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:13px"><select id="filter-findings-status" onchange="filterFindings()" style="padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px"><option value="">All Status</option><option value="open">Open</option><option value="in-progress">In Progress</option><option value="resolved">Resolved</option></select></div>';
+    h += '<div class="section-header"><h2>Findings (' + findings.length + ')</h2>';
+    h += '<div style="display:flex;gap:4px;align-items:center">' + _addBtn + _signoffBtn + '<button class="add-btn report-btn" onclick="generateReport()">&#128196; Report</button></div></div>';
+    if (!findings.length) {
+      h += '<div class="empty"><div class="empty-icon">&#10003;</div>'
+         + '<p>No findings logged.<br>All clear &mdash; or log your first observation.</p></div>';
+    } else {
+      for (var j=0; j<findings.length; j++) {
+        var f = findings[j];
+        var pb = 'badge-' + (f.priority||'medium');
+        var st = f.status || 'open';
+        var sb = st==='open' ? 'badge-open' : st==='resolved' ? 'badge-closed' : 'badge-active';
+        var desc = f.description ? esc(f.description.substring(0,80)) + (f.description.length>80?'...':'') : '';
+        var resolved = st === 'resolved';
+        var cardStyle = resolved ? ' style="opacity:0.7;border-left:3px solid #2E3D2E"' : (st==='in-progress' ? ' style="border-left:3px solid #A07850"' : '');
+        var resolvedMeta = resolved && f.resolved_by ? '<div class="card-meta" style="color:#2E3D2E;font-size:.75rem">&#10003; Resolved by ' + esc(f.resolved_by) + (f.resolved_at ? ' &mdash; ' + new Date(f.resolved_at).toLocaleDateString() : '') + '</div>' : '';
+        var resMeta = resolved && f.resolution_notes ? '<div class="card-meta" style="font-style:italic">' + esc(f.resolution_notes.substring(0,80)) + '</div>' : '';
+        var actions = '';
+        if (st === 'open') {
+          actions = '<div style="margin-top:8px;display:flex;gap:6px">'
+            + '<button onclick="setFindingStatus(' + f.id + ',\'in-progress\')" style="background:#A07850;color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:12px;cursor:pointer">&#8594; In Progress</button>'
+            + '<button onclick="openResolveModal(' + f.id + ')" style="background:#2E3D2E;color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:12px;cursor:pointer">&#10003; Resolve</button>'
+            + '</div>';
+        } else if (st === 'in-progress') {
+          actions = '<div style="margin-top:8px;display:flex;gap:6px">'
+            + '<button onclick="setFindingStatus(' + f.id + ',\'open\')" style="background:#888;color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:12px;cursor:pointer">&#8634; Reopen</button>'
+            + '<button onclick="openResolveModal(' + f.id + ')" style="background:#2E3D2E;color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:12px;cursor:pointer">&#10003; Resolve</button>'
+            + '</div>';
+        } else {
+          actions = '<div style="margin-top:8px">'
+            + '<button onclick="setFindingStatus(' + f.id + ',\'open\')" style="background:#888;color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:12px;cursor:pointer">&#8634; Reopen</button>'
+            + '</div>';
+        }
+        h += '<div class="card" data-filter="' + esc((f.title||'') + ' ' + (f.description||'')) + '" data-status="' + esc(st) + '"' + cardStyle + ' onclick="viewFinding(' + f.id + ')"><h3>' + esc(f.title) + '</h3>'
+           + (desc ? '<div class="card-meta">' + desc + '</div>' : '')
+           + resolvedMeta + resMeta
+           + '<div class="card-row"><span class="badge ' + pb + '">' + esc(f.priority||'medium') + '</span>'
+           + '<span class="badge ' + sb + '">' + esc(st) + '</span>'
+           + (f.location_ref ? '<span style="font-size:.75rem;color:#A07850">' + esc(f.location_ref) + '</span>' : '')
+           + '</div>' + actions + '</div>';
+      }
+    }
+    setContent(h);
+  }
+
+  window.startVoice = function startVoice() {
+    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Voice input requires Chrome or Edge. Try typing instead.");
+      return;
+    }
+    var btn = document.getElementById("mic-btn");
+    var ta  = document.getElementById("f-desc");
+    if (!btn || !ta) return;
+    if (btn.classList.contains("recording")) return;
+    var recog = new SpeechRecognition();
+    recog.lang = "en-US";
+    recog.interimResults = false;
+    recog.maxAlternatives = 1;
+    recog.onstart = function() {
+      btn.classList.add("recording");
+      btn.textContent = "\u23F9 Stop";
+    };
+    recog.onresult = function(e) {
+      var transcript = e.results[0][0].transcript;
+      ta.value = ta.value ? ta.value + " " + transcript : transcript;
+    };
+    recog.onerror = function(e) {
+      alert("Voice error: " + e.error);
+    };
+    recog.onend = function() {
+      btn.classList.remove("recording");
+      btn.innerHTML = "&#127908; Dictate";
+    };
+    recog.start();
+  };
+  window.generateReport = async function generateReport() {
+    if (!ST.insp) return;
+    try {
+      setContent('<div class="empty"><div class="empty-icon">&#128196;</div><p>Generating report…</p></div>');
+      var result = await api('/reports/generate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({inspection_id: ST.insp.id})
+      });
+      if (result && result.download_url) {
+        window.open(result.download_url, '_blank');
+        loadFindingsScreen(ST.insp);
+      } else {
+        alert('Report generation failed.');
+        loadFindingsScreen(ST.insp);
+      }
+    } catch(e) {
+      alert('Report error: ' + e.message);
+      loadFindingsScreen(ST.insp);
+    }
+  };
+  // ── PHOTO CAPTURE FLOW ─────────────────────────────────────────────────────
+  async function handlePhotoCapture(file) {
+    if (!ST.insp) return;
+    var prog = document.getElementById('upload-progress');
+    prog.textContent = 'Uploading ' + file.name + '...';
+    prog.classList.add('show');
+    try {
+      // 1. Get pre-signed URL
+      var presign = await api('/photos/presign', {
+        method:'POST',
+        body: JSON.stringify({
+          inspection_id: ST.insp.id,
+          filename: file.name,
+          content_type: file.type || 'image/jpeg'
+        })
+      });
+
+      // 2. PUT file directly to S3
+      var s3resp = await fetch(presign.upload_url, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type || 'image/jpeg' },
+        body: file
+      });
+      if (!s3resp.ok) throw new Error('S3 upload failed: ' + s3resp.status);
+
+      // 3. Save record in DB
+      await api('/photos', {
+        method: 'POST',
+        body: JSON.stringify({
+          inspection_id: ST.insp.id,
+          s3_key: presign.s3_key,
+          filename: file.name,
+          uploaded_by: document.getElementById('user-badge').textContent || 'Inspector'
+        })
+      });
+
+      prog.classList.remove('show');
+      showToast('Photo uploaded');
+      loadFindingsScreen(ST.insp);
+    } catch(e) {
+      prog.classList.remove('show');
+      showToast('Upload error: ' + e.message);
+      console.error(e);
+    }
+  }
+
+  // ── SUBMIT FORMS ───────────────────────────────────────────────────────────
+  window.submitProject = async function() {
+    var name = document.getElementById('p-name').value.trim();
+    if (!name) { showToast('Project name required'); return; }
+    try {
+      await api('/projects', {method:'POST', body:JSON.stringify({
+        name:name,
+        client:document.getElementById('p-client').value||null,
+        location:document.getElementById('p-location').value||null,
+        status:document.getElementById('p-status').value,
+        created_by:'Inspector'
+      })});
+      closeProjectModal();
+      document.getElementById('p-name').value='';
+      document.getElementById('p-client').value='';
+      document.getElementById('p-location').value='';
+      showToast('Project created');
+      loadProjects();
+    } catch(e) { showToast('Error: ' + e.message); }
+  };
+
+  window.submitInspection = async function() {
+    var title = document.getElementById('i-title').value.trim();
+    if (!title) { showToast('Title required'); return; }
+    try {
+      await api('/inspections', {method:'POST', body:JSON.stringify({
+        project_id:ST.proj.id, title:title,
+        inspection_type:document.getElementById('i-type').value,
+        inspector:document.getElementById('i-inspector').value||null,
+        notes:document.getElementById('i-notes').value||null,
+        status:'open'
+      })});
+      closeInspectionModal();
+      document.getElementById('i-title').value='';
+      document.getElementById('i-notes').value='';
+      showToast('Inspection created');
+      loadInspections(ST.proj);
+    } catch(e) { showToast('Error: ' + e.message); }
+  };
+
+  window.submitFinding = async function() {
+    var title = document.getElementById('f-title').value.trim();
+    if (!title) { showToast('Title required'); return; }
+    try {
+      await api('/findings', {method:'POST', body:JSON.stringify({
+        inspection_id:ST.insp.id, title:title,
+        description:document.getElementById('f-desc').value||null,
+        priority:document.getElementById('f-priority').value,
+        location_ref:document.getElementById('f-location').value||null,
+        status:'open'
+      })});
+      closeFindingModal();
+      document.getElementById('f-title').value='';
+      document.getElementById('f-desc').value='';
+      document.getElementById('f-location').value='';
+      showToast('Finding logged');
+      loadFindingsScreen(ST.insp);
+    } catch(e) { showToast('Error: ' + e.message); }
+  };
+
+  // ── UTILS ──────────────────────────────────────────────────────────────────
+  function esc(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 3000);
+  }
+
+
+  // ── MEMBERS ────────────────────────────────────────────────────────────────
+  window.openMembersModal = function() {
+    if (!ST.proj) return;
+    document.getElementById('members-list').innerHTML = '<p style="color:#888;font-size:13px">Loading...</p>';
+    document.getElementById('m-email').value = '';
+    document.getElementById('modal-members').classList.add('open');
+    window.loadMembers();
+  };
+  window.closeMembersModal = function() {
+    document.getElementById('modal-members').classList.remove('open');
+  };
+  window.loadMembers = async function() {
+    try {
+      var list = await api('/projects/' + ST.proj.id + '/members');
+      var ml = document.getElementById('members-list');
+      if (!list.length) { ml.innerHTML = '<p style="color:#888;font-size:13px">No members yet.</p>'; return; }
+      var h = '';
+      for (var i = 0; i < list.length; i++) {
+        var m = list[i];
+        var badge = m.role === 'owner' ? '<span style="background:#2E3D2E;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px">Owner</span>'
+                  : '<span style="background:#A07850;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px">' + esc(m.role) + '</span>';
+        var removeBtn = m.role !== 'owner'
+          ? '<button onclick="removeMember(' + m.id + ')" style="background:none;border:none;color:#c00;cursor:pointer;font-size:18px;line-height:1" title="Remove">&#10005;</button>'
+          : '';
+        h += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee">'
+           + '<div>' + badge + ' <span style="font-size:13px;margin-left:6px">' + esc(m.email) + '</span></div>'
+           + removeBtn + '</div>';
+      }
+      ml.innerHTML = h;
+    } catch(e) { document.getElementById('members-list').innerHTML = '<p style="color:red;font-size:13px">Error: ' + e.message + '</p>'; }
+  };
+  window.removeMember = async function(memberId) {
+    if (!confirm('Remove this member?')) return;
+    try {
+      await api('/projects/' + ST.proj.id + '/members/' + memberId, {method:'DELETE'});
+      showToast('Member removed');
+      window.loadMembers();
+    } catch(e) { showToast('Error: ' + e.message); }
+  };
+  window.submitInvite = async function() {
+    var email = document.getElementById('m-email').value.trim();
+    if (!email) { showToast('Email required'); return; }
+    var role = document.getElementById('m-role').value;
+    try {
+      await api('/projects/' + ST.proj.id + '/members', {
+        method: 'POST',
+        body: JSON.stringify({email: email, role: role})
+      });
+      document.getElementById('m-email').value = '';
+      showToast('Member invited');
+      window.loadMembers();
+    } catch(e) { showToast('Error: ' + e.message); }
+  };
+
+  // ── FINDING RESOLUTION ─────────────────────────────────────────────────────
+  window.setFindingStatus = async function(fid, newStatus) {
+    try {
+      await api('/findings/' + fid + '/status', {method:'PATCH', body:JSON.stringify({status:newStatus})});
+      showToast('Finding updated');
+      loadFindingsScreen(ST.insp);
+    } catch(e) { showToast('Error: ' + e.message); }
+  };
+  window.openResolveModal = function(fid) {
+    document.getElementById('resolve-finding-id').value = fid;
+    document.getElementById('resolve-notes').value = '';
+    document.getElementById('modal-resolve').classList.add('open');
+    setTimeout(function(){ document.getElementById('resolve-notes').focus(); }, 100);
+  };
+  window.closeResolveModal = function() {
+    document.getElementById('modal-resolve').classList.remove('open');
+  };
+  window.submitResolve = async function() {
+    var fid = document.getElementById('resolve-finding-id').value;
+    var notes = document.getElementById('resolve-notes').value.trim();
+    try {
+      await api('/findings/' + fid + '/resolve', {method:'PATCH', body:JSON.stringify({resolution_notes: notes||null})});
+      closeResolveModal();
+      showToast('Finding resolved');
+      loadFindingsScreen(ST.insp);
+    } catch(e) { showToast('Error: ' + e.message); }
+  };
+
+  // ── INSPECTION SIGN-OFF ────────────────────────────────────────────────────
+  window.signoffInspection = async function(iid) {
+    if (!confirm('Sign off this inspection? Findings will be locked.')) return;
+    try {
+      var updated = await api('/inspections/' + iid + '/signoff', {method:'PATCH', body:'{}'});
+      showToast('Inspection signed off');
+      ST.insp = updated;
+      var findings = await api('/findings?inspection_id=' + iid);
+      renderFindingsScreen(updated, findings);
+    } catch(e) { showToast('Error: ' + e.message); }
+  };
+  window.reopenInspection = async function(iid) {
+    try {
+      var updated = await api('/inspections/' + iid + '/reopen', {method:'PATCH', body:'{}'});
+      showToast('Inspection reopened');
+      ST.insp = updated;
+      var findings = await api('/findings?inspection_id=' + iid);
+      renderFindingsScreen(updated, findings);
+    } catch(e) { showToast('Error: ' + e.message); }
+  };
+
+  // ── SEARCH & FILTER ───────────────────────────────────────────────────────
+  window.filterCards = function(input) {
+    var q = input.value.toLowerCase().trim();
+    var cards = document.querySelectorAll('.card[data-filter]');
+    for (var i=0; i<cards.length; i++) {
+      var text = (cards[i].getAttribute('data-filter')||'').toLowerCase();
+      cards[i].style.display = (!q || text.indexOf(q) >= 0) ? '' : 'none';
+    }
+  };
+  window.filterFindings = function() {
+    var qEl = document.getElementById('filter-findings-text');
+    var stEl = document.getElementById('filter-findings-status');
+    var q = qEl ? qEl.value.toLowerCase().trim() : '';
+    var st = stEl ? stEl.value : '';
+    var cards = document.querySelectorAll('.card[data-filter]');
+    for (var i=0; i<cards.length; i++) {
+      var text = (cards[i].getAttribute('data-filter')||'').toLowerCase();
+      var cardSt = cards[i].getAttribute('data-status') || '';
+      var matchText = !q || text.indexOf(q) >= 0;
+      var matchSt = !st || cardSt === st;
+      cards[i].style.display = (matchText && matchSt) ? '' : 'none';
+    }
+  };
+
+
+
+  // ── HELP / USER GUIDE ─────────────────────────────────────────────────────
+  window.openHelpGuide = function() { renderHelpGuide(); };
+  function renderHelpGuide() {
+    ST.screen = 'help';
+    nav('Help / User Guide', true);
+    var h = '';
+    h += '<main class="help-guide" aria-labelledby="help-title">';
+    h += '<section class="help-hero"><div class="help-kicker">VR Inspector user guide</div><h1 id="help-title">Use the right device for the work: phone in the field, desktop for drawings.</h1><p>VR Inspector helps project teams document inspections, photos, findings, drawing pins, reports, and member access in one project workspace. This guide reflects the current staging behavior, including Block 8E PDF page navigation and zoom.</p><nav class="help-toc" aria-label="Help topics"><a href="#help-getting-started">Getting started</a><a href="#help-device-split">Device split</a><a href="#help-workflows">Core workflows</a><a href="#help-handoff">Field-to-office handoff</a><a href="#help-access">Access</a><a href="#help-troubleshooting">Troubleshooting</a></nav></section>';
+    h += '<section id="help-getting-started" class="help-section"><h2>Getting started</h2><div class="help-steps"><div class="help-step"><div><strong>Sign in.</strong><p>Use the Sign In button and your approved VR Inspector account. The app uses authenticated access before project data loads.</p></div></div><div class="help-step"><div><strong>Open or create a project.</strong><p>Projects group inspections, drawings, members, findings, photos, and reports for one job or facility.</p></div></div><div class="help-step"><div><strong>Create an inspection.</strong><p>Use a title, inspection type, inspector name, and notes so field observations are organized by site walk or discipline.</p></div></div><div class="help-step"><div><strong>Capture photos and log findings on mobile, then place drawing pins on desktop when precision matters.</strong><p>This split keeps field capture fast while preserving drawing accuracy for PDFs, zoom, and multi-page review.</p></div></div></div></section>';
+    h += '<section id="help-device-split" class="help-section"><h2>Recommended device split</h2><div class="help-grid"><article class="help-card"><h3>Mobile phone: field inspections, photos, findings</h3><ul><li>Start or open an inspection while walking the site.</li><li>Tap <strong>Capture Photo</strong> to use the phone camera for site evidence.</li><li>Log findings with title, description, priority, and location reference.</li><li>Use dictation where supported by the browser; type instead if voice input is not available.</li></ul></article><article class="help-card"><h3>Desktop or laptop: drawings, PDFs, zoom, pins</h3><ul><li>Upload drawings from organized project files.</li><li>Review multi-page PDFs with Prev / Next and page count.</li><li>Use zoom controls for detail review and accurate pin placement.</li><li>Place color-coded pins on the active PDF page or raster drawing.</li></ul></article></div><div class="help-note"><strong>Why this matters:</strong> phone screens are ideal for field evidence capture, but desktop/laptop screens are better for drawing upload, multi-page PDF review, 200% zoom checks, and precise pin placement.</div></section>';
+    h += '<section id="help-workflows" class="help-section"><h2>Core workflows</h2><h3>Project and inspection workflow</h3><ol><li>Open <strong>Projects</strong>, select a project, or create a new one.</li><li>Create an inspection for the site walk or discipline.</li><li>Use the inspection screen for weather context, photos, findings, sign-off, and reports.</li><li>Sign off only when the inspection record is ready to close; reopen if follow-up is required.</li></ol><h3>Photo and finding workflow on mobile</h3><ol><li>Open the inspection on your phone.</li><li>Tap <strong>Capture Photo</strong>; the current app uploads the image through secure storage and records it on the inspection.</li><li>Tap <strong>+ Log Finding</strong>, enter the issue, priority, and location reference.</li><li>Use status updates to move findings from open to in progress or resolved.</li></ol><h3>Drawing upload and pin workflow on desktop</h3><ol><li>Open a project, then use <strong>Upload Drawing</strong> in the Drawings section.</li><li>Accepted drawing types in the current product are PNG, JPG/JPEG, SVG, and PDF, up to 50 MB.</li><li>Open the drawing thumbnail. PDFs use the Block 8E canvas viewer; raster images use the image viewer and do not show PDF page controls.</li><li>For PDFs, use Prev / Next and zoom controls before pinning. Pins are saved to the current PDF page.</li><li>Tap <strong>+ Add Pin</strong>, click the drawing location, choose the status, and add the label/notes.</li></ol><div class="status-list" aria-label="Pin status colors"><span class="status-pill"><span class="status-dot" style="background:#28a745"></span>Verified</span><span class="status-pill"><span class="status-dot" style="background:#007bff"></span>In Progress</span><span class="status-pill"><span class="status-dot" style="background:#ffc107"></span>Punch Item</span><span class="status-pill"><span class="status-dot" style="background:#dc3545"></span>Not Installed</span><span class="status-pill"><span class="status-dot" style="background:#6c757d"></span>Not Started</span></div></section>';
+    h += '<section id="help-handoff" class="help-section"><h2>Field-to-office handoff</h2><div class="handoff-diagram"><div class="handoff-box"><h3>Field inspector on phone</h3><p>Capture photos, log findings, add location references, and keep the inspection record current during the site walk.</p></div><div class="handoff-arrow" aria-hidden="true">→</div><div class="handoff-box"><h3>Office reviewer on desktop</h3><p>Upload or open drawings, review PDFs page by page, zoom for detail, place pins, resolve/reopen findings, and generate reports.</p></div></div><p class="help-small">Tip: use consistent finding titles and location references so desktop reviewers can match photos/findings to drawing locations before placing pins.</p></section>';
+    h += '<section id="help-access" class="help-section"><h2>Permissions and access</h2><p>VR Inspector is an authenticated project workspace. Sign-in is required, and project membership controls access to project information, drawings, pins, and collaboration features. Member invitations are managed from the project screen through the <strong>Members</strong> control.</p><div class="help-note"><strong>Use the correct project:</strong> confirm the project name before uploading drawings, capturing inspection evidence, or inviting another team member.</div></section>';
+    h += '<section id="help-troubleshooting" class="help-section"><h2>Troubleshooting current behavior</h2><div class="help-grid"><article class="help-card"><h3>PDF controls do not appear</h3><p>PDF controls are only for PDF drawings. PNG/JPG drawings open as images and still support pin placement, but they intentionally have no Prev / Next or zoom toolbar.</p></article><article class="help-card"><h3>Mobile browser slows or crashes at high zoom</h3><p>Samsung Chrome at 200% zoom was observed as a risk area. A memory hotfix is in staging, but desktop/laptop is still recommended for high-zoom PDF review.</p></article><article class="help-card"><h3>Cannot upload a drawing</h3><p>Confirm you are inside the correct project, signed in, and using PNG, JPG/JPEG, SVG, or PDF under the 50 MB current limit.</p></article><article class="help-card"><h3>Voice dictation is unavailable</h3><p>Voice input depends on browser support. Current guidance in the app is to use Chrome or Edge where supported, or type the finding description.</p></article><article class="help-card"><h3>iPad/Safari validation</h3><p>iPad/Safari remains an open manual QA item for PDF canvas rendering, zoom, page navigation, and page-aware pins.</p></article><article class="help-card"><h3>Photo appears but does nothing</h3><p>If a photo thumbnail opens no detail action, continue using the photo grid as evidence attachment and document the related finding. Expanded photo interactions should be treated as future UX work unless separately implemented.</p></article></div></section>';
+    h += '<div class="help-footer-actions"><button class="add-btn" onclick="loadDashboard()">Back to Dashboard</button><button class="sec-btn" onclick="loadProjects()">Open Projects</button></div>';
+    h += '</main>';
+    setContent(h);
+  }
+
+  // ── BLOCK 8E: DRAWINGS + PAGE-AWARE PDF PINS ─────────────────────────────
+
+  var PIN_COLORS = {
+    verified:     '#28a745',
+    in_progress:  '#007bff',
+    punch_item:   '#ffc107',
+    not_installed:'#dc3545',
+    not_started:  '#6c757d'
+  };
+  var PIN_LABELS = {
+    verified:'Verified', in_progress:'In Progress', punch_item:'Punch Item',
+    not_installed:'Not Installed', not_started:'Not Started'
+  };
+
+  function drawingFileKind(d) {
+    var raw = ((d && (d.file_type || d.filename || d.title)) || '').toLowerCase();
+    if (raw.indexOf('pdf') !== -1 || raw.slice(-4) === '.pdf') return 'pdf';
+    return 'raster';
+  }
+
+  function currentDrawingById(drawingId) {
+    for (var i = 0; i < ST.drawings.length; i++) {
+      if (ST.drawings[i].id === drawingId) return ST.drawings[i];
+    }
+    return null;
+  }
+
+  // -- renderDrawingsSection (returns HTML string, called in renderInspections)
+  function renderDrawingsSection(drawings) {
+    var h = '<div class="photos-section" id="drawings-section">';
+    h += '<div class="section-header">';
+    h += '<h2>Drawings (' + drawings.length + ')</h2>';
+    h += '<button class="add-btn" onclick="document.getElementById(\'drawing-input\').click()">&#128196; Upload Drawing</button>';
+    h += '</div>';
+    if (!drawings.length) {
+      h += '<div class="empty" style="padding:16px 0">'
+        + '<div class="empty-icon" style="font-size:1.6rem">&#128196;</div>'
+        + '<p style="font-size:.85rem">No drawings uploaded. Upload a P&amp;ID or site plan to start pinning.</p></div>';
+    } else {
+      h += '<div class="photo-grid">';
+      for (var i = 0; i < drawings.length; i++) {
+        var d = drawings[i];
+        var thumb = d.thumbnail_url || d.view_url || '';
+        var lbl   = esc(d.title || d.filename || 'Drawing');
+        var kind  = drawingFileKind(d);
+        var discBadge = d.discipline
+          ? ' <span style="background:#2E3D2E;color:#B8960C;padding:1px 5px;border-radius:3px;font-size:.6rem;vertical-align:middle">' + esc(d.discipline) + '</span>'
+          : '';
+        var fileBadge = kind === 'pdf'
+          ? ' <span style="background:#7a2020;color:#fff;padding:1px 5px;border-radius:3px;font-size:.6rem;vertical-align:middle">PDF</span>'
+          : '';
+        var safeUrl   = (d.view_url || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        var safeTitle = lbl.replace(/'/g,"\\'");
+        h += '<div class="photo-thumb vri-drawing-thumb" onclick="openDrawingViewer(' + d.id + ',\'' + safeUrl + '\',\'' + safeTitle + '\')" style="cursor:pointer">';
+        if (thumb && kind !== 'pdf') {
+          h += '<img src="' + thumb + '" alt="' + lbl + '" loading="lazy"/>';
+        } else {
+          h += '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#dce6f1;font-size:2.2rem">' + (kind === 'pdf' ? '&#128462;' : '&#128196;') + '</div>';
+        }
+        h += '<div class="photo-label">' + lbl + discBadge + fileBadge + '</div></div>';
+      }
+      h += '</div>';
+    }
+    h += '<div id="drawing-upload-progress" class="upload-progress">Uploading drawing...</div>';
+    h += '</div>';
+    return h;
+  }
+
+  function resetPdfState() {
+    // Invalidate and cancel any render still allocating a canvas bitmap.
+    ST.renderRequestId += 1;
+    if (ST.renderTask && typeof ST.renderTask.cancel === 'function') {
+      try { ST.renderTask.cancel(); } catch(e) {}
+    }
+    ST.renderTask = null;
+    if (ST.pdfDoc && typeof ST.pdfDoc.destroy === 'function') {
+      try { ST.pdfDoc.destroy(); } catch(e) {}
+    }
+    ST.pdfDoc = null;
+    ST.currentPage = 1;
+    ST.totalPages = 1;
+    ST.zoomScale = 1.0;
+    ST.isPdf = false;
+    ST.renderedWidth = 0;
+    ST.renderedHeight = 0;
+    ST.renderDpr = 1;
+  }
+
+  function syncPinOverlay(width, height) {
+    var markers = document.getElementById('pin-markers');
+    if (!markers) return;
+    if (width && height) {
+      markers.style.width = width + 'px';
+      markers.style.height = height + 'px';
+    } else {
+      markers.style.width = '100%';
+      markers.style.height = '100%';
+    }
+  }
+
+  function getPdfRenderLimits() {
+    var ua = navigator.userAgent || '';
+    var isMobile = /Android|iPad|iPhone|iPod|Mobile/i.test(ua);
+    var deviceMemory = Number(navigator.deviceMemory || 0);
+    // Android Chrome can terminate the tab before throwing a catchable canvas error.
+    // Keep mobile backing stores below ~48 MB (12M RGBA pixels); use 32 MB on low-memory phones.
+    var maxArea = isMobile ? ((deviceMemory && deviceMemory <= 4) ? 8388608 : 12582912) : 67108864;
+    var maxDim = isMobile ? 4096 : 8192;
+    var maxDpr = isMobile ? 1.25 : 2.0;
+    return { isMobile:isMobile, maxArea:maxArea, maxDim:maxDim, maxDpr:maxDpr };
+  }
+
+  function getSafeRenderDpr(viewport) {
+    var limits = getPdfRenderLimits();
+    var desired = Math.min(window.devicePixelRatio || 1, limits.maxDpr);
+    var byArea = Math.sqrt(limits.maxArea / Math.max(1, viewport.width * viewport.height));
+    var byDim = Math.min(limits.maxDim / Math.max(1, viewport.width), limits.maxDim / Math.max(1, viewport.height));
+    return Math.max(0.1, Math.min(desired, byArea, byDim));
+  }
+
+  async function savePdfDimensions(drawingId, widthPts, heightPts) {
+    try {
+      await api('/v1/drawings/' + drawingId + '/dimensions', {
+        method: 'PATCH',
+        body: JSON.stringify({ page_width_pts: widthPts, page_height_pts: heightPts })
+      });
+    } catch(e) { console.warn('PDF dimension capture skipped', e); }
+  }
+
+  async function renderPdfPage(pageNum, requestedScale) {
+    if (!ST.pdfDoc) return;
+    var requestId = ++ST.renderRequestId;
+    if (ST.renderTask && typeof ST.renderTask.cancel === 'function') {
+      try { ST.renderTask.cancel(); } catch(e) {}
+      try { await ST.renderTask.promise; } catch(e) {}
+    }
+    ST.renderTask = null;
+    var page = await ST.pdfDoc.getPage(pageNum);
+    if (requestId !== ST.renderRequestId) return;
+    var unitViewport = page.getViewport({ scale: 1.0 });
+    var displayScale = Math.max(0.5, Math.min(2.0, requestedScale || 1.0));
+    var viewport = page.getViewport({ scale: displayScale });
+    var renderDpr = getSafeRenderDpr(viewport);
+    ST.zoomScale = displayScale;
+    ST.renderDpr = renderDpr;
+    var canvas = document.getElementById('drawing-viewer-canvas');
+    var ctx = canvas.getContext('2d', { alpha:false });
+    // Release the previous backing store before allocating the next one.
+    canvas.width = 1;
+    canvas.height = 1;
+    canvas.width = Math.max(1, Math.floor(viewport.width * renderDpr));
+    canvas.height = Math.max(1, Math.floor(viewport.height * renderDpr));
+    canvas.style.width = Math.floor(viewport.width) + 'px';
+    canvas.style.height = Math.floor(viewport.height) + 'px';
+    ST.renderedWidth = Math.floor(viewport.width);
+    ST.renderedHeight = Math.floor(viewport.height);
+    syncPinOverlay(ST.renderedWidth, ST.renderedHeight);
+    var transform = renderDpr === 1 ? null : [renderDpr, 0, 0, renderDpr, 0, 0];
+    try {
+      ST.renderTask = page.render({ canvasContext:ctx, viewport:viewport, transform:transform });
+      await ST.renderTask.promise;
+    } catch(e) {
+      if (e && e.name === 'RenderingCancelledException') return;
+      throw e;
+    } finally {
+      if (requestId === ST.renderRequestId) ST.renderTask = null;
+    }
+    if (requestId !== ST.renderRequestId) return;
+    ST.currentPage = pageNum;
+    if (pageNum === 1 && ST.activeDrawing && (!ST.activeDrawing.page_width_pts || !ST.activeDrawing.page_height_pts)) {
+      savePdfDimensions(ST.activeDrawing.id, Math.round(unitViewport.width * 100) / 100, Math.round(unitViewport.height * 100) / 100);
+    }
+    updatePdfToolbar();
+    renderPins();
+  }
+
+  function updatePdfToolbar() {
+    var pageInd = document.getElementById('dv-page-indicator');
+    var zoomInd = document.getElementById('dv-zoom-indicator');
+    var prevBtn = document.getElementById('dv-prev-btn');
+    var nextBtn = document.getElementById('dv-next-btn');
+    if (pageInd) pageInd.textContent = 'Page ' + ST.currentPage + ' of ' + ST.totalPages;
+    if (zoomInd) zoomInd.textContent = Math.round(ST.zoomScale * 100) + '%';
+    if (prevBtn) prevBtn.disabled = ST.currentPage <= 1;
+    if (nextBtn) nextBtn.disabled = ST.currentPage >= ST.totalPages;
+  }
+
+  window.prevPage = async function() { if (ST.pdfDoc && ST.currentPage > 1) await renderPdfPage(ST.currentPage - 1, ST.zoomScale); };
+  window.nextPage = async function() { if (ST.pdfDoc && ST.currentPage < ST.totalPages) await renderPdfPage(ST.currentPage + 1, ST.zoomScale); };
+  window.zoomIn = async function() {
+    if (!ST.pdfDoc) return;
+    var idx = ST.zoomLevels.indexOf(ST.zoomScale);
+    if (idx < 0) idx = 2;
+    if (idx < ST.zoomLevels.length - 1) await renderPdfPage(ST.currentPage, ST.zoomLevels[idx + 1]);
+  };
+  window.zoomOut = async function() {
+    if (!ST.pdfDoc) return;
+    var idx = ST.zoomLevels.indexOf(ST.zoomScale);
+    if (idx < 0) idx = 2;
+    if (idx > 0) await renderPdfPage(ST.currentPage, ST.zoomLevels[idx - 1]);
+  };
+
+  // -- openDrawingViewer
+  window.openDrawingViewer = async function(drawingId, viewUrl, title) {
+    resetPdfState();
+    var drawing = currentDrawingById(drawingId) || { id: drawingId, viewUrl: viewUrl, title: title };
+    ST.activeDrawing = drawing;
+    ST.activeDrawing.viewUrl = viewUrl;
+    ST.activeDrawing.title = title;
+    ST.pinMode = false;
+    var modal    = document.getElementById('modal-drawing-viewer');
+    var img      = document.getElementById('drawing-viewer-img');
+    var canvas   = document.getElementById('drawing-viewer-canvas');
+    var toolbar  = document.getElementById('dv-pdf-toolbar');
+    var titleEl  = document.getElementById('drawing-viewer-title');
+    var pinLabel = document.getElementById('pin-mode-label');
+    var pinBtn   = document.getElementById('pin-mode-btn');
+    titleEl.textContent = title;
+    img.src = ''; img.style.display = 'none';
+    if (canvas) { canvas.style.display = 'none'; canvas.width = 0; canvas.height = 0; }
+    if (toolbar) toolbar.style.display = 'none';
+    var ifrm = document.getElementById('drawing-viewer-iframe');
+    if (ifrm) { ifrm.src = ''; ifrm.style.display = 'none'; }
+    syncPinOverlay(null, null);
+    img.style.cursor = 'default';
+    pinLabel.style.display = 'none';
+    if (pinBtn) { pinBtn.style.background = '#555'; pinBtn.textContent = '+ Add Pin'; }
+    modal.style.display = 'flex';
+    document.getElementById('pin-markers').innerHTML = '<div style="color:#fff;padding:8px;font-size:12px">Loading pins...</div>';
+    try {
+      var vRes = await api('/v1/drawings/' + drawingId + '/view-url');
+      var finalUrl = vRes.view_url || viewUrl || '';
+      ST.activeDrawing.viewUrl = finalUrl;
+      var kind = drawingFileKind(drawing);
+      var isPdf = kind === 'pdf' || finalUrl.toLowerCase().indexOf('.pdf') !== -1;
+      ST.isPdf = isPdf;
+      await loadPins(drawingId);
+      if (isPdf) {
+        if (!window.pdfjsLib) throw new Error('PDF renderer is still loading; refresh and try again.');
+        if (toolbar) toolbar.style.display = 'flex';
+        if (canvas) canvas.style.display = 'block';
+        ST.pdfDoc = await window.pdfjsLib.getDocument(finalUrl).promise;
+        ST.totalPages = ST.pdfDoc.numPages || 1;
+        await renderPdfPage(1, 1.0);
+      } else {
+        img.onload = function() {
+          syncPinOverlay(img.clientWidth || img.naturalWidth, img.clientHeight || img.naturalHeight);
+          renderPins();
+        };
+        img.src = finalUrl;
+        img.style.display = 'block';
+        if (toolbar) toolbar.style.display = 'none';
+        renderPins();
+      }
+    } catch(e) {
+      console.warn('drawing view failed', e);
+      document.getElementById('pin-markers').innerHTML = '<div style="color:#fff;padding:8px;font-size:12px">Drawing load error: ' + esc(e.message) + '</div>';
+    }
+  };
+
+  // -- closeDrawingViewer
+  window.closeDrawingViewer = function() {
+    resetPdfState();
+    document.getElementById('modal-drawing-viewer').style.display = 'none';
+    var ifrm2 = document.getElementById('drawing-viewer-iframe');
+    if (ifrm2) { ifrm2.src = ''; ifrm2.style.display = 'none'; }
+    var img = document.getElementById('drawing-viewer-img');
+    if (img) { img.src = ''; img.style.display = 'none'; }
+    var canvas = document.getElementById('drawing-viewer-canvas');
+    if (canvas) { canvas.style.display = 'none'; }
+    var toolbar = document.getElementById('dv-pdf-toolbar');
+    if (toolbar) { toolbar.style.display = 'none'; }
+    document.getElementById('pin-markers').innerHTML = '';
+    ST.activeDrawing = null;
+    ST.pins = [];
+    ST.pinMode = false;
+  };
+
+  // -- handleDrawingClick (pin placement)
+  window.handleDrawingClick = function(event) {
+    if (!ST.activeDrawing || !ST.pinMode) return;
+    var markers = document.getElementById('pin-markers');
+    var rect    = markers.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    var x       = parseFloat(((event.clientX - rect.left) / rect.width  * 100).toFixed(2));
+    var y       = parseFloat(((event.clientY - rect.top)  / rect.height * 100).toFixed(2));
+    x = Math.max(0, Math.min(100, x));
+    y = Math.max(0, Math.min(100, y));
+    showPinStatusPicker(x, y, ST.isPdf ? ST.currentPage : 1);
+  };
+
+  // -- togglePinMode
+  window.togglePinMode = function() {
+    ST.pinMode = !ST.pinMode;
+    var img     = document.getElementById('drawing-viewer-img');
+    var canvas  = document.getElementById('drawing-viewer-canvas');
+    var markers = document.getElementById('pin-markers');
+    var label   = document.getElementById('pin-mode-label');
+    var btn     = document.getElementById('pin-mode-btn');
+    if (img) img.style.cursor = ST.pinMode ? 'crosshair' : 'default';
+    if (canvas) canvas.style.cursor = ST.pinMode ? 'crosshair' : 'default';
+    if (markers) {
+      markers.style.cursor        = ST.pinMode ? 'crosshair' : 'default';
+      markers.style.pointerEvents = ST.pinMode ? 'auto' : 'none';
+      markers.onclick = ST.pinMode ? window.handleDrawingClick : null;
+    }
+    label.style.display = ST.pinMode ? 'inline' : 'none';
+    label.textContent = ST.pinMode ? (ST.isPdf ? '📍 Click page ' + ST.currentPage + ' to pin' : '📍 Click image to pin') : '';
+    if (btn) {
+      btn.style.background = ST.pinMode ? '#B8960C' : '#555';
+      btn.textContent = ST.pinMode ? 'Cancel Pin' : '+ Add Pin';
+    }
+  };
+
+  // -- loadPins
+  async function loadPins(drawingId) {
+    try {
+      ST.pins = await api('/v1/drawings/' + drawingId + '/pins');
+    } catch(e) {
+      ST.pins = [];
+    }
+    renderPins();
+  }
+
+  // -- renderPins
+  function renderPins() {
+    var container = document.getElementById('pin-markers');
+    if (!container) return;
+    var pins = ST.pins || [];
+    if (ST.isPdf) {
+      pins = pins.filter(function(p) { return Number(p.page_number || 1) === Number(ST.currentPage || 1); });
+    }
+    var h = '';
+    for (var i = 0; i < pins.length; i++) {
+      var pin   = pins[i];
+      var color = PIN_COLORS[pin.status] || '#6c757d';
+      var lbl   = esc(String(pin.tag_number || (i + 1)));
+      h += '<div onclick="event.stopPropagation();showPinDetail(' + pin.id + ')" style="pointer-events:auto;position:absolute;'
+        + 'left:' + pin.x_pct + '%;top:' + pin.y_pct + '%;'
+        + 'transform:translate(-50%,-100%);cursor:pointer;z-index:10;user-select:none">'
+        + '<div style="background:' + color + ';color:#fff;border-radius:50%;width:24px;height:24px;'
+        + 'display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;'
+        + 'border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.6)">' + lbl + '</div>'
+        + '<div style="width:2px;height:8px;background:' + color + ';margin:0 auto;opacity:.8"></div>'
+        + '</div>';
+    }
+    container.innerHTML = h;
+  }
+
+  // -- showPinStatusPicker
+  function showPinStatusPicker(x, y, pageNumber) {
+    var existing = document.getElementById('pin-status-picker');
+    if (existing) existing.remove();
+    var overlay = document.createElement('div');
+    overlay.id = 'pin-status-picker';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:99999;display:flex;align-items:center;justify-content:center';
+    var statuses = [
+      { key:'not_started',  label:'Not Started',  color:'#6c757d' },
+      { key:'in_progress',  label:'In Progress',  color:'#007bff' },
+      { key:'verified',     label:'Verified',     color:'#28a745' },
+      { key:'punch_item',   label:'Punch Item',   color:'#ffc107' },
+      { key:'not_installed',label:'Not Installed',color:'#dc3545' }
+    ];
+    var btns = '';
+    for (var i = 0; i < statuses.length; i++) {
+      var s = statuses[i];
+      btns += '<button onclick="placePin(' + x + ',' + y + ',\'' + s.key + '\',' + pageNumber + ')" '
+        + 'style="background:' + s.color + ';color:#fff;border:none;border-radius:4px;'
+        + 'padding:10px 16px;font-size:13px;cursor:pointer;font-weight:600;text-align:left">'
+        + s.label + '</button>';
+    }
+    overlay.innerHTML = '<div style="background:#1a1a1a;border-radius:8px;padding:20px;max-width:300px;width:90%">'
+      + '<p style="color:#B8960C;font-size:13px;font-weight:700;margin:0 0 12px;text-transform:uppercase;letter-spacing:.5px">Select Pin Status' + (ST.isPdf ? ' — Page ' + pageNumber : '') + '</p>'
+      + '<div style="display:flex;flex-direction:column;gap:8px">' + btns + '</div>'
+      + '<button onclick="document.getElementById(\'pin-status-picker\').remove()" '
+      + 'style="margin-top:12px;width:100%;background:#444;color:#fff;border:none;border-radius:4px;padding:8px;cursor:pointer;font-size:13px">Cancel</button>'
+      + '</div>';
+    document.body.appendChild(overlay);
+  }
+
+  // -- placePin
+  window.placePin = async function(x, y, status, pageNumber) {
+    var picker = document.getElementById('pin-status-picker');
+    if (picker) picker.remove();
+    if (!ST.activeDrawing) return;
+    try {
+      var pin = await api('/v1/drawings/' + ST.activeDrawing.id + '/pins', {
+        method: 'POST',
+        body: JSON.stringify({ x_pct: x, y_pct: y, status: status, page_number: pageNumber || (ST.isPdf ? ST.currentPage : 1) || 1 })
+      });
+      ST.pins.push(pin);
+      renderPins();
+      showToast('Pin placed');
+    } catch(e) { showToast('Error placing pin: ' + e.message); }
+  };
+
+  // -- showPinDetail
+  window.showPinDetail = function(pinId) {
+    var pin = null;
+    for (var i = 0; i < ST.pins.length; i++) {
+      if (ST.pins[i].id === pinId) { pin = ST.pins[i]; break; }
+    }
+    if (!pin) return;
+    var color = PIN_COLORS[pin.status] || '#6c757d';
+    var label = PIN_LABELS[pin.status] || pin.status;
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:99999;display:flex;align-items:center;justify-content:center';
+    overlay.innerHTML = '<div style="background:#1a1a1a;border-radius:8px;padding:20px;max-width:300px;width:90%;color:#fff">'
+      + '<p style="font-weight:700;font-size:14px;margin:0 0 10px">Pin #' + esc(String(pin.tag_number || pin.id)) + '</p>'
+      + (ST.isPdf ? '<p style="margin:0 0 6px;font-size:13px">Page: ' + esc(String(pin.page_number || 1)) + '</p>' : '')
+      + '<p style="margin:0 0 6px;font-size:13px">Status: <span style="background:' + color + ';padding:2px 10px;border-radius:4px;font-size:12px;font-weight:600">' + label + '</span></p>'
+      + (pin.notes ? '<p style="margin:8px 0 0;font-size:12px;color:#aaa;font-style:italic">' + esc(pin.notes) + '</p>' : '')
+      + '<div style="display:flex;gap:8px;margin-top:16px">'
+      + '<button onclick="deletePin(' + pin.id + ',this.closest(\'div[style*=inset]\'))" '
+      + 'style="flex:1;background:#dc3545;color:#fff;border:none;border-radius:4px;padding:8px;cursor:pointer;font-size:13px">&#128465; Delete</button>'
+      + '<button onclick="this.closest(\'div[style*=inset]\').remove()" '
+      + 'style="flex:1;background:#555;color:#fff;border:none;border-radius:4px;padding:8px;cursor:pointer;font-size:13px">Close</button>'
+      + '</div></div>';
+    document.body.appendChild(overlay);
+  };
+
+  // -- deletePin
+  window.deletePin = async function(pinId, overlayEl) {
+    if (!ST.activeDrawing) return;
+    if (!confirm('Delete this pin?')) return;
+    try {
+      await api('/v1/pins/' + pinId, { method: 'DELETE' });
+      if (overlayEl) overlayEl.remove();
+      ST.pins = ST.pins.filter(function(p) { return p.id !== pinId; });
+      renderPins();
+      showToast('Pin deleted');
+    } catch(e) { showToast('Error: ' + e.message); }
+  };
+
+  // -- handleDrawingUpload
+  async function handleDrawingUpload(file) {
+    if (!ST.proj) return;
+    var prog = document.getElementById('drawing-upload-progress');
+    if (prog) { prog.textContent = 'Uploading ' + esc(file.name) + '...'; prog.classList.add('show'); }
+    try {
+      var presign = await api('/v1/drawings/presign', {
+        method: 'POST',
+        body: JSON.stringify({
+          project_id:   ST.proj.id,
+          filename:     file.name,
+          content_type: file.type || 'application/octet-stream'
+        })
+      });
+      var expectedPrefix = 'drawings/projects/' + ST.proj.id + '/';
+      if (!presign.s3_key || presign.s3_key.indexOf(expectedPrefix) !== 0) {
+        throw new Error('Upload key is not scoped to the active project');
+      }
+      var s3resp = await fetch(presign.upload_url, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        body: file
+      });
+      if (!s3resp.ok) throw new Error('S3 upload failed: ' + s3resp.status);
+      await api('/v1/drawings', {
+        method: 'POST',
+        body: JSON.stringify({
+          project_id:   ST.proj.id,
+          s3_key:       presign.s3_key,
+          filename:     file.name,
+          title:        file.name.replace(/\.[^.]+$/, ''),
+          discipline:   'general',
+          file_type:    (file.name.split('.').pop() || 'png').toLowerCase(),
+          file_size:    file.size || null,
+          uploaded_by:  document.getElementById('user-badge').textContent || 'Inspector'
+        })
+      });
+      if (prog) prog.classList.remove('show');
+      showToast('Drawing uploaded');
+      try { ST.drawings = await api('/v1/drawings?project_id=' + ST.proj.id); } catch(e2) { ST.drawings = []; }
+      var drawSec = document.getElementById('drawings-section');
+      if (drawSec) drawSec.outerHTML = renderDrawingsSection(ST.drawings);
+    } catch(e) {
+      if (prog) prog.classList.remove('show');
+      showToast('Upload error: ' + e.message);
+      console.error(e);
+    }
+  }
+  // ── END BLOCK 8D ───────────────────────────────────────────────────────
+})();
+</script>
+<style>
+/* Block 8D — Drawing cards */
+.vri-drawing-thumb:hover { box-shadow: 0 0 0 3px #B8960C; }
+</style>
+
+
+<style>
+.sec-btn{background:#A07850;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer;margin-left:8px}
+.sec-btn:hover{background:#8a6640}
+#modal-members .modal-box{max-width:440px}
+</style>
+<div id="modal-members" class="modal-overlay" onclick="if(event.target===this)closeMembersModal()">
+  <div class="modal-box">
+    <div class="modal-header"><h3>Project Members</h3><button class="modal-close" onclick="closeMembersModal()">&#10005;</button></div>
+    <div id="members-list" style="min-height:60px;margin-bottom:16px"></div>
+    <div style="border-top:1px solid #eee;padding-top:14px">
+      <p style="font-weight:600;font-size:13px;margin:0 0 8px">Invite by Email</p>
+      <input id="m-email" type="email" placeholder="user@example.com" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;margin-bottom:8px">
+      <select id="m-role" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;margin-bottom:12px">
+        <option value="inspector">Inspector</option>
+        <option value="viewer">Viewer</option>
+      </select>
+      <button class="add-btn" onclick="submitInvite()" style="width:100%">Send Invite</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-resolve" class="modal-overlay" onclick="if(event.target===this)closeResolveModal()">
+  <div class="modal-box" style="max-width:400px">
+    <div class="modal-header"><h3>Resolve Finding</h3><button class="modal-close" onclick="closeResolveModal()">&#10005;</button></div>
+    <input type="hidden" id="resolve-finding-id">
+    <p style="font-size:13px;color:#666;margin:0 0 10px">Optional: add resolution notes before closing this finding.</p>
+    <textarea id="resolve-notes" rows="4" placeholder="Describe how this was resolved..." style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;resize:vertical;margin-bottom:12px"></textarea>
+    <button class="add-btn" onclick="submitResolve()" style="width:100%">&#10003; Mark Resolved</button>
+  </div>
+</div>
+<div id="modal-drawing-viewer" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:9999;flex-direction:column"><div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#1a1a1a"><span id="drawing-viewer-title" style="color:#fff;font-weight:600;font-size:15px"></span><div style="display:flex;gap:8px;align-items:center"><span id="pin-mode-label" style="color:#B8960C;font-size:13px;display:none">&#128205; Click drawing to pin</span><button id="pin-mode-btn" onclick="togglePinMode()" style="background:#555;color:#fff;border:none;border-radius:4px;padding:6px 14px;cursor:pointer;margin-right:4px">+ Add Pin</button><button onclick="closeDrawingViewer()" style="background:#555;color:#fff;border:none;border-radius:4px;padding:6px 14px;cursor:pointer">Close</button></div></div><div id="dv-pdf-toolbar" style="display:none;padding:6px 10px;background:#2c3e50;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:1px solid #1a252f"><button id="dv-prev-btn" onclick="prevPage()" disabled style="padding:4px 10px;background:#4a6fa5;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px">&#8592; Prev</button><span id="dv-page-indicator" style="color:#ecf0f1;min-width:90px;text-align:center;font-size:13px;font-weight:600">Page 1 of 1</span><button id="dv-next-btn" onclick="nextPage()" disabled style="padding:4px 10px;background:#4a6fa5;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px">Next &#8594;</button><span style="flex:1"></span><button onclick="zoomOut()" style="padding:4px 9px;background:#4a6fa5;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:16px;font-weight:bold">&#8722;</button><span id="dv-zoom-indicator" style="color:#ecf0f1;min-width:45px;text-align:center;font-size:13px;font-weight:600">100%</span><button onclick="zoomIn()" style="padding:4px 9px;background:#4a6fa5;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:16px;font-weight:bold">&#43;</button></div><div style="flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:16px"><div style="position:relative;display:inline-block"><img id="drawing-viewer-img" src="" alt="Drawing" style="max-width:100%;max-height:80vh;border:1px solid #444;cursor:default;display:none" onclick="handleDrawingClick(event)"/><canvas id="drawing-viewer-canvas" style="display:none;border:1px solid #444;cursor:default"></canvas><iframe id="drawing-viewer-iframe" src="" style="display:none;width:90vw;height:80vh;border:1px solid #444" frameborder="0"></iframe><div id="pin-markers" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none"></div></div></div></div>
+</body>
+</html>
